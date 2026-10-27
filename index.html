@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>محوّل الماك إلى Xtream</title>
 <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#000;color:#f3ead2;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;min-height:100vh}
@@ -46,7 +45,7 @@ h1{font-size:20px;text-align:center;margin:10px 0 16px;color:#d4af37}
 #pbar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d0d0d;border-bottom:1px solid #2e2616}
 #pt{flex:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d4af37}
 video{flex:1;width:100%;min-height:0;background:#000}
-#perr{color:#ff7b7b;font-size:13px;padding:8px 12px;background:#0d0d0d;word-break:break-word}
+#perr{color:#f1d77a;font-size:13px;padding:8px 12px;background:#0d0d0d;word-break:break-word}
 .hide{display:none!important}
 </style>
 </head>
@@ -102,8 +101,13 @@ let cats = [];
 let items = [];
 let curCat = null;
 let player = null;
-let hls = null;
 let backFn = null;
+let cur = null;
+let retries = 0;
+let retryTimer = null;
+let watchTimer = null;
+let lastT = -1;
+let lastChange = 0;
 const v = $("#v");
 
 function el(tag, cls, text) {
@@ -127,15 +131,15 @@ const ARABIC_TOKENS = ["AR", "ARAB", "ARABIC", "ARABE", "ARABIA"];
 
 function tokensOf(s) {
   const out = [];
-  let cur = "";
+  let c2 = "";
   const str = String(s || "").toUpperCase();
   for (let i = 0; i < str.length; i++) {
     const c = str.charCodeAt(i);
     const ok = (c >= 48 && c <= 57) || (c >= 65 && c <= 90);
-    if (ok) cur += str.charAt(i);
-    else if (cur) { out.push(cur); cur = ""; }
+    if (ok) c2 += str.charAt(i);
+    else if (c2) { out.push(c2); c2 = ""; }
   }
-  if (cur) out.push(cur);
+  if (c2) out.push(c2);
   return out;
 }
 function hasArabic(s) {
@@ -211,7 +215,7 @@ $("#go").onclick = async function () {
 };
 
 $("#out").onclick = function () {
-  stopPlayer();
+  closePlayer();
   $("#app").classList.add("hide");
   $("#login").classList.remove("hide");
 };
@@ -307,8 +311,8 @@ $("#q").addEventListener("input", function () {
 
 // ---------- open ----------
 function openItem(it) {
-  if (type === "itv") play(API + "/s/" + ctxId() + "/live/" + it.id + "/0.ts", it.name, true);
-  else if (type === "vod") play(API + "/s/" + ctxId() + "/movie/" + it.id + "/0.mp4", it.name, false);
+  if (type === "itv") play(API + "/s/" + ctxId() + "/live/" + it.id + "/0.ts", it.name, "live");
+  else if (type === "vod") play(API + "/s/" + ctxId() + "/movie/" + it.id + "/0.mp4", it.name, "vod");
   else openSeries(it);
 }
 
@@ -349,7 +353,7 @@ function showEpisodes(it, s, seasons) {
     const b = el("button", "card");
     b.appendChild(el("p", "", s.name + " - حلقة " + ep));
     b.onclick = function () {
-      play(API + "/s/" + ctxId() + "/series/" + s.id + "/" + ep + ".mkv", it.name + " - " + s.name + " - حلقة " + ep, false);
+      play(API + "/s/" + ctxId() + "/series/" + s.id + "/" + ep + ".mkv", it.name + " - " + s.name + " - حلقة " + ep, "series");
     };
     grid.appendChild(b);
   });
@@ -361,43 +365,100 @@ $("#back").onclick = function () {
 };
 
 // ---------- player ----------
-function stopPlayer() {
+function killPlayer() {
   if (player) { try { player.destroy(); } catch (e) {} player = null; }
-  if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
   v.pause();
   v.removeAttribute("src");
   v.load();
 }
 
-function play(url, title, live) {
-  stopPlayer();
-  $("#pt").textContent = title;
-  $("#perr").textContent = "";
-  $("#pl").classList.add("on");
-  if (live && window.mpegts && mpegts.isSupported()) {
-    player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: url });
-    player.attachMediaElement(v);
-    player.load();
-    player.on(mpegts.Events.ERROR, function (t, d) {
-      $("#perr").textContent = "تعذر التشغيل: " + d;
-    });
-    const p = player.play();
-    if (p && p.catch) p.catch(function () {});
-  } else {
-    v.src = url;
-    const p2 = v.play();
-    if (p2 && p2.catch) p2.catch(function () {});
+function stopTimers() {
+  if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+  if (watchTimer) { clearInterval(watchTimer); watchTimer = null; }
+}
+
+function closePlayer() {
+  stopTimers();
+  cur = null;
+  killPlayer();
+  $("#pl").classList.remove("on");
+}
+
+function startStream() {
+  if (!cur) return;
+  killPlayer();
+  const u = cur.url + "?t=" + Date.now();
+  if (cur.kind === "series" || !window.mpegts || !mpegts.isSupported()) {
+    v.src = u;
+    const p0 = v.play();
+    if (p0 && p0.catch) p0.catch(function () {});
+    return;
+  }
+  const live = cur.kind === "live";
+  player = mpegts.createPlayer(
+    { type: "mpegts", isLive: live, url: u },
+    { enableWorker: false, liveBufferLatencyChasing: live }
+  );
+  player.attachMediaElement(v);
+  player.on(mpegts.Events.ERROR, function (t, d) {
+    $("#perr").textContent = "انقطع البث (" + d + ")";
+    scheduleRetry();
+  });
+  player.load();
+  const p = player.play();
+  if (p && p.catch) p.catch(function () {});
+}
+
+function scheduleRetry() {
+  if (!cur || !cur.auto) return;
+  if (retryTimer) return;
+  if (retries >= 40) {
+    $("#perr").textContent = "توقف البث بعد محاولات كثيرة. جرّب قناة أخرى.";
+    return;
+  }
+  retries++;
+  $("#perr").textContent = "إعادة الاتصال... محاولة " + retries;
+  retryTimer = setTimeout(function () {
+    retryTimer = null;
+    lastChange = Date.now();
+    startStream();
+  }, 1500);
+}
+
+function watchdog() {
+  if (!cur || !cur.auto) return;
+  if (v.paused) { lastChange = Date.now(); return; }
+  const t = v.currentTime;
+  if (t !== lastT) {
+    lastT = t;
+    lastChange = Date.now();
+    if (retries > 0 && $("#perr").textContent.indexOf("إعادة") === 0) $("#perr").textContent = "";
+    return;
+  }
+  if (Date.now() - lastChange > 8000) {
+    lastChange = Date.now();
+    scheduleRetry();
   }
 }
 
+function play(url, title, kind) {
+  stopTimers();
+  cur = { url: url, kind: kind, auto: kind === "live" };
+  retries = 0;
+  lastT = -1;
+  lastChange = Date.now();
+  $("#pt").textContent = title;
+  $("#perr").textContent = "";
+  $("#pl").classList.add("on");
+  startStream();
+  if (cur.auto) watchTimer = setInterval(watchdog, 2000);
+}
+
 v.onerror = function () {
-  $("#perr").textContent = "تعذر تشغيل هذا الملف في المتصفح";
+  if (cur && cur.kind === "series") $("#perr").textContent = "تعذر تشغيل هذا الملف في المتصفح";
 };
 
-$("#pclose").onclick = function () {
-  stopPlayer();
-  $("#pl").classList.remove("on");
-};
+$("#pclose").onclick = closePlayer;
 
 loadSaved();
 </script>
