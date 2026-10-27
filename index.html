@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>محوّل الماك إلى Xtream</title>
+<script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#0b1220;color:#e8eefc;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:#fff;background:#111b2e;border:1px solid #243452;border-radius:10px;padding:12px;width:100%}
+.wrap{max-width:980px;margin:0 auto;padding:14px}
+h1{font-size:20px;text-align:center;margin:10px 0 16px;color:#2dd4bf}
+.box{background:#101a2e;border:1px solid #1e2c48;border-radius:14px;padding:14px;margin-bottom:12px}
+.box label{display:block;font-size:13px;color:#9db0d3;margin:10px 0 6px}
+.btn{background:#2dd4bf;color:#04201c;font-weight:700;padding:12px 18px;border-radius:10px;width:100%;margin-top:12px}
+.btn.alt{background:#1a2742;color:#e8eefc;font-weight:500;width:auto;margin:0;padding:8px 14px}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px;color:#cfe0ff}
+.chk input{width:auto}
+.err{color:#ff7b7b;font-size:14px;margin-top:10px;word-break:break-word}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#101a2e;border:1px solid #1e2c48;border-radius:12px;padding:10px;text-align:center}
+.stat small{display:block;color:#8ea3c8;font-size:12px;margin-bottom:4px}
+.stat b{font-size:16px}
+.tabs{display:flex;gap:8px;margin:12px 0}
+.tab{flex:1;padding:11px 6px;border-radius:999px;background:#101a2e;border:1px solid #1e2c48}
+.tab.on{background:#2dd4bf;color:#04201c;font-weight:700;border-color:#2dd4bf}
+.row2{display:flex;gap:8px;margin-bottom:10px}
+#cats{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px}
+.cat{flex:none;padding:8px 12px;border-radius:999px;background:#101a2e;border:1px solid #1e2c48;font-size:13px;white-space:nowrap}
+.cat.on{background:#1e3a5f;border-color:#2dd4bf}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.card{background:#101a2e;border:1px solid #1e2c48;border-radius:10px;overflow:hidden;text-align:start;display:block;width:100%}
+.ph{width:100%;aspect-ratio:2/3;background:#0b1220;display:flex;align-items:center;justify-content:center}
+.card.live .ph{aspect-ratio:16/9}
+.ph img{width:100%;height:100%;object-fit:cover}
+.card.live .ph img{object-fit:contain;padding:8px}
+.card p{padding:7px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg{grid-column:1/-1;text-align:center;color:#8ea3c8;padding:24px}
+#pl{position:fixed;inset:0;background:#000;z-index:50;display:none;flex-direction:column}
+#pl.on{display:flex}
+#pbar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0b1220}
+#pt{flex:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+video{flex:1;width:100%;min-height:0;background:#000}
+#perr{color:#ff7b7b;font-size:13px;padding:8px 12px;background:#0b1220;word-break:break-word}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>محوّل الماك إلى Xtream</h1>
+
+  <div class="box" id="login">
+    <label>رابط البورتال</label>
+    <input id="portal" placeholder="http://example.com/c/" autocomplete="off">
+    <label>الماك</label>
+    <input id="mac" placeholder="00:1A:79:00:00:00" autocomplete="off">
+    <div class="chk"><input type="checkbox" id="fAr" checked><span>عربي فقط</span></div>
+    <div class="chk"><input type="checkbox" id="fAd" checked><span>حجب المحتوى الإباحي</span></div>
+    <button class="btn" id="go">اتصال</button>
+    <div class="err" id="lerr"></div>
+  </div>
+
+  <div id="app" class="hide">
+    <div class="stats">
+      <div class="stat"><small>الانتهاء</small><b id="sExp">-</b></div>
+      <div class="stat"><small>التصنيفات</small><b id="sCat">-</b></div>
+      <div class="stat"><small>القنوات</small><b id="sCh">-</b></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-t="itv">قنوات</button>
+      <button class="tab" data-t="vod">أفلام</button>
+      <button class="tab" data-t="series">مسلسلات</button>
+    </div>
+    <div class="row2">
+      <input id="q" placeholder="بحث...">
+      <button class="btn alt" id="back">رجوع</button>
+      <button class="btn alt" id="out">خروج</button>
+    </div>
+    <div id="cats"></div>
+    <div id="grid"></div>
+  </div>
+</div>
+
+<div id="pl">
+  <div id="pbar"><button class="btn alt" id="pclose">إغلاق</button><div id="pt"></div></div>
+  <video id="v" controls playsinline></video>
+  <div id="perr"></div>
+</div>
+
+<script>
+const API = "https://sp.m737217130.workers.dev";
+const $ = function (s) { return document.querySelector(s); };
+
+let cfg = null;
+let type = "itv";
+let cats = [];
+let items = [];
+let curCat = null;
+let player = null;
+let hls = null;
+let backFn = null;
+const v = $("#v");
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function b64(s) {
+  return btoa(s).split("+").join("-").split("/").join("_").split("=").join("");
+}
+function ctxId() {
+  return b64(cfg.portal + "|" + cfg.mac);
+}
+
+// ---------- filters ----------
+const ADULT_SUBSTR = ["XXX", "PORN", "ADULT", "EROTIC", "EROTIK", "ERWACHSENE", "NSFW", "18+", "+18", "PLAYBOY", "HUSTLER", "BRAZZERS", "سكس", "اباحي", "إباحي", "للكبار", "جنس"];
+const ADULT_TOKENS = ["SEX", "SEXY", "ADULTS", "PORNO", "XXX"];
+const ARABIC_TOKENS = ["AR", "ARAB", "ARABIC", "ARABE", "ARABIA"];
+
+function tokensOf(s) {
+  const out = [];
+  let cur = "";
+  const str = String(s || "").toUpperCase();
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    const ok = (c >= 48 && c <= 57) || (c >= 65 && c <= 90);
+    if (ok) cur += str.charAt(i);
+    else if (cur) { out.push(cur); cur = ""; }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+function hasArabic(s) {
+  const str = String(s || "");
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if ((c >= 0x0600 && c <= 0x06ff) || (c >= 0x0750 && c <= 0x077f) || (c >= 0xfb50 && c <= 0xfdff) || (c >= 0xfe70 && c <= 0xfeff)) return true;
+  }
+  return false;
+}
+function isAdult(s) {
+  const raw = String(s || "");
+  const up = raw.toUpperCase();
+  for (let i = 0; i < ADULT_SUBSTR.length; i++) {
+    if (up.includes(ADULT_SUBSTR[i]) || raw.includes(ADULT_SUBSTR[i])) return true;
+  }
+  const t = tokensOf(raw);
+  for (let j = 0; j < t.length; j++) if (ADULT_TOKENS.indexOf(t[j]) > -1) return true;
+  return false;
+}
+function isArabic(s) {
+  if (hasArabic(s)) return true;
+  const t = tokensOf(s);
+  for (let j = 0; j < t.length; j++) if (ARABIC_TOKENS.indexOf(t[j]) > -1) return true;
+  return false;
+}
+
+// ---------- api ----------
+async function call(params) {
+  const u = new URL(API + "/api");
+  u.searchParams.set("portal", cfg.portal);
+  u.searchParams.set("mac", cfg.mac);
+  Object.keys(params).forEach(function (k) { u.searchParams.set(k, params[k]); });
+  const r = await fetch(u.toString());
+  const j = await r.json();
+  if (j && j.error) throw new Error(j.error);
+  return j;
+}
+
+// ---------- login ----------
+function loadSaved() {
+  try {
+    const s = JSON.parse(localStorage.getItem("stk_cfg") || "null");
+    if (s) {
+      $("#portal").value = s.portal || "";
+      $("#mac").value = s.mac || "";
+      $("#fAr").checked = s.ar !== false;
+      $("#fAd").checked = s.ad !== false;
+    }
+  } catch (e) {}
+}
+
+$("#go").onclick = async function () {
+  $("#lerr").textContent = "";
+  const portal = $("#portal").value.trim();
+  const mac = $("#mac").value.trim();
+  if (!portal || !mac) { $("#lerr").textContent = "أدخل رابط البورتال والماك"; return; }
+  cfg = { portal: portal, mac: mac, ar: $("#fAr").checked, ad: $("#fAd").checked };
+  $("#go").textContent = "جاري الاتصال...";
+  try {
+    const info = await call({ action: "info" });
+    localStorage.setItem("stk_cfg", JSON.stringify(cfg));
+    $("#sExp").textContent = info.expiry || "-";
+    $("#sCat").textContent = String(info.itv_cats + info.vod_cats + info.series_cats);
+    $("#sCh").textContent = String(info.channels);
+    $("#login").classList.add("hide");
+    $("#app").classList.remove("hide");
+    loadCats();
+  } catch (e) {
+    $("#lerr").textContent = "تعذر الاتصال: " + e.message;
+  }
+  $("#go").textContent = "اتصال";
+};
+
+$("#out").onclick = function () {
+  stopPlayer();
+  $("#app").classList.add("hide");
+  $("#login").classList.remove("hide");
+};
+
+document.querySelectorAll(".tab").forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll(".tab").forEach(function (x) { x.classList.toggle("on", x === b); });
+    type = b.dataset.t;
+    $("#q").value = "";
+    loadCats();
+  };
+});
+
+// ---------- categories and items ----------
+async function loadCats() {
+  backFn = null;
+  $("#cats").innerHTML = "";
+  $("#grid").innerHTML = "";
+  $("#grid").appendChild(el("div", "msg", "جاري التحميل..."));
+  try {
+    let list = await call({ action: "cats", type: type });
+    if (cfg.ad) list = list.filter(function (c) { return !isAdult(c.name); });
+    if (cfg.ar) list = list.filter(function (c) { return isArabic(c.name); });
+    cats = list;
+    renderCats();
+    if (!cats.length) {
+      $("#grid").innerHTML = "";
+      $("#grid").appendChild(el("div", "msg", "لا توجد أقسام (جرّب إيقاف فلتر العربي)"));
+      return;
+    }
+    loadItems(cats[0].id);
+  } catch (e) {
+    $("#grid").innerHTML = "";
+    $("#grid").appendChild(el("div", "msg", "تعذر التحميل: " + e.message));
+  }
+}
+
+function renderCats() {
+  const box = $("#cats");
+  box.innerHTML = "";
+  cats.forEach(function (c) {
+    const b = el("button", "cat" + (c.id === curCat ? " on" : ""), c.name);
+    b.onclick = function () { $("#q").value = ""; loadItems(c.id); };
+    box.appendChild(b);
+  });
+}
+
+async function loadItems(id) {
+  curCat = id;
+  backFn = null;
+  renderCats();
+  const grid = $("#grid");
+  grid.innerHTML = "";
+  grid.appendChild(el("div", "msg", "جاري التحميل..."));
+  try {
+    let list = await call({ action: "items", type: type, cat: id });
+    if (cfg.ad) list = list.filter(function (x) { return !x.adult && !isAdult(x.name); });
+    items = list;
+    drawItems();
+  } catch (e) {
+    grid.innerHTML = "";
+    grid.appendChild(el("div", "msg", "تعذر التحميل: " + e.message));
+  }
+}
+
+function drawItems() {
+  const grid = $("#grid");
+  grid.innerHTML = "";
+  const q = $("#q").value.trim().toLowerCase();
+  const list = items.filter(function (x) { return !q || x.name.toLowerCase().indexOf(q) > -1; });
+  if (!list.length) { grid.appendChild(el("div", "msg", "لا توجد نتائج")); return; }
+  list.forEach(function (it) {
+    const b = el("button", "card" + (type === "itv" ? " live" : ""));
+    const ph = el("div", "ph");
+    if (it.logo) {
+      const im = document.createElement("img");
+      im.loading = "lazy";
+      im.src = it.logo;
+      im.onerror = function () { im.style.visibility = "hidden"; };
+      ph.appendChild(im);
+    }
+    b.appendChild(ph);
+    b.appendChild(el("p", "", it.name));
+    b.onclick = function () { openItem(it); };
+    grid.appendChild(b);
+  });
+}
+
+$("#q").addEventListener("input", function () {
+  if (backFn) return;
+  drawItems();
+});
+
+// ---------- open ----------
+function openItem(it) {
+  if (type === "itv") play(API + "/s/" + ctxId() + "/live/" + it.id + "/0.ts", it.name, true);
+  else if (type === "vod") play(API + "/s/" + ctxId() + "/movie/" + it.id + "/0.mp4", it.name, false);
+  else openSeries(it);
+}
+
+async function openSeries(it) {
+  const grid = $("#grid");
+  grid.innerHTML = "";
+  grid.appendChild(el("div", "msg", "جاري التحميل..."));
+  try {
+    const seasons = await call({ action: "seasons", id: it.id });
+    backFn = function () { drawItems(); backFn = null; };
+    showSeasons(it, seasons);
+  } catch (e) {
+    grid.innerHTML = "";
+    grid.appendChild(el("div", "msg", "تعذر التحميل: " + e.message));
+  }
+}
+
+function showSeasons(it, seasons) {
+  const grid = $("#grid");
+  grid.innerHTML = "";
+  if (!seasons.length) { grid.appendChild(el("div", "msg", "لا توجد مواسم")); return; }
+  if (seasons.length === 1) { showEpisodes(it, seasons[0], seasons); return; }
+  seasons.forEach(function (s) {
+    const b = el("button", "card");
+    b.appendChild(el("p", "", s.name));
+    b.onclick = function () {
+      backFn = function () { showSeasons(it, seasons); backFn = function () { drawItems(); backFn = null; }; };
+      showEpisodes(it, s, seasons);
+    };
+    grid.appendChild(b);
+  });
+}
+
+function showEpisodes(it, s, seasons) {
+  const grid = $("#grid");
+  grid.innerHTML = "";
+  s.episodes.forEach(function (ep) {
+    const b = el("button", "card");
+    b.appendChild(el("p", "", s.name + " - حلقة " + ep));
+    b.onclick = function () {
+      play(API + "/s/" + ctxId() + "/series/" + s.id + "/" + ep + ".mkv", it.name + " - " + s.name + " - حلقة " + ep, false);
+    };
+    grid.appendChild(b);
+  });
+}
+
+$("#back").onclick = function () {
+  if (backFn) backFn();
+  else if (curCat) loadItems(curCat);
+};
+
+// ---------- player ----------
+function stopPlayer() {
+  if (player) { try { player.destroy(); } catch (e) {} player = null; }
+  if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
+  v.pause();
+  v.removeAttribute("src");
+  v.load();
+}
+
+function play(url, title, live) {
+  stopPlayer();
+  $("#pt").textContent = title;
+  $("#perr").textContent = "";
+  $("#pl").classList.add("on");
+  if (live && window.mpegts && mpegts.isSupported()) {
+    player = mpegts.createPlayer({ type: "mpegts", isLive: true, url: url });
+    player.attachMediaElement(v);
+    player.load();
+    player.on(mpegts.Events.ERROR, function (t, d) {
+      $("#perr").textContent = "تعذر التشغيل: " + d;
+    });
+    const p = player.play();
+    if (p && p.catch) p.catch(function () {});
+  } else {
+    v.src = url;
+    const p2 = v.play();
+    if (p2 && p2.catch) p2.catch(function () {});
+  }
+}
+
+v.onerror = function () {
+  $("#perr").textContent = "تعذر تشغيل هذا الملف في المتصفح";
+};
+
+$("#pclose").onclick = function () {
+  stopPlayer();
+  $("#pl").classList.remove("on");
+};
+
+loadSaved();
+</script>
+</body>
+</html>
