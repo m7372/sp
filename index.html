@@ -3,27 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>محوّل الماك إلى Xtream</title>
+<title>AlameeereSP</title>
 <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#000;color:#f3ead2;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;min-height:100vh}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-input{font:inherit;color:#fff;background:#0d0d0d;border:1px solid #3a3020;border-radius:10px;padding:12px;width:100%}
-input:focus{outline:1px solid #d4af37}
+input[type=text]{font:inherit;color:#fff;background:#0d0d0d;border:1px solid #3a3020;border-radius:10px;padding:12px;width:100%}
+input[type=text]:focus{outline:1px solid #d4af37}
 .wrap{max-width:980px;margin:0 auto;padding:14px}
-h1{font-size:20px;text-align:center;margin:10px 0 16px;color:#d4af37}
+.logo{font-weight:800;letter-spacing:1px;color:#d4af37}
+h1{font-size:22px;text-align:center;margin:10px 0 16px}
 .box{background:#0d0d0d;border:1px solid #2e2616;border-radius:14px;padding:14px;margin-bottom:12px}
 .box label{display:block;font-size:13px;color:#b8a77a;margin:10px 0 6px}
 .btn{background:#d4af37;color:#1a1300;font-weight:700;padding:12px 18px;border-radius:10px;width:100%;margin-top:12px}
 .btn.alt{background:#1a1608;color:#e8d9a8;border:1px solid #3a3020;font-weight:500;width:auto;margin:0;padding:8px 14px}
 .chk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px;color:#e8d9a8}
-.chk input{width:auto}
 .err{color:#ff7b7b;font-size:14px;margin-top:10px;word-break:break-word}
+.saved{margin-top:14px}
+.saved h3{font-size:13px;color:#b8a77a;margin-bottom:6px;font-weight:500}
+.sv{display:flex;gap:6px;margin-bottom:6px}
+.sv .pick{flex:1;text-align:start;background:#14110a;border:1px solid #2e2616;border-radius:10px;padding:10px;font-size:13px;direction:ltr;word-break:break-all}
+.sv .del{background:#2a1010;border:1px solid #4a2020;border-radius:10px;padding:0 14px;color:#ff9a9a}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stat{background:#0d0d0d;border:1px solid #2e2616;border-radius:12px;padding:10px;text-align:center}
 .stat small{display:block;color:#a8966a;font-size:12px;margin-bottom:4px}
-.stat b{font-size:16px;color:#d4af37}
+.stat b{font-size:14px;color:#d4af37}
+.xt{margin-top:10px}
+.xt h3{font-size:14px;color:#d4af37;margin-bottom:6px}
+.xr{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.xr span{flex:none;width:64px;font-size:12px;color:#a8966a}
+.xr code{flex:1;direction:ltr;text-align:start;background:#14110a;border:1px solid #2e2616;border-radius:8px;padding:8px;font-size:12px;word-break:break-all;color:#f1d77a}
+.xnote{font-size:12px;color:#8f7f55;margin-top:6px}
 .tabs{display:flex;gap:8px;margin:12px 0}
 .tab{flex:1;padding:11px 6px;border-radius:999px;background:#0d0d0d;border:1px solid #2e2616}
 .tab.on{background:#d4af37;color:#1a1300;font-weight:700;border-color:#d4af37}
@@ -42,26 +53,37 @@ h1{font-size:20px;text-align:center;margin:10px 0 16px;color:#d4af37}
 .msg{grid-column:1/-1;text-align:center;color:#a8966a;padding:24px}
 #pl{position:fixed;inset:0;background:#000;z-index:50;display:none;flex-direction:column}
 #pl.on{display:flex}
-#pbar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d0d0d;border-bottom:1px solid #2e2616}
-#pt{flex:1;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d4af37}
-video{flex:1;width:100%;min-height:0;background:#000}
-#perr{color:#f1d77a;font-size:13px;padding:8px 12px;background:#0d0d0d;word-break:break-word}
+#pbar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#000;border-bottom:1px solid #2e2616}
+#pbar .logo{font-size:16px}
+#pt{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8d9a8}
+#vw{flex:1;min-height:0;background:#000;display:flex}
+video{width:100%;height:100%;background:#000}
+#ctl{background:#000;border-top:1px solid #2e2616;padding:8px 12px 12px}
+#sr{display:flex;align-items:center;gap:10px;direction:ltr}
+#seek{flex:1;accent-color:#d4af37}
+#tm{font-size:12px;color:#d4af37;min-width:90px;text-align:center}
+#br{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap;direction:ltr}
+.cb{background:#14110a;border:1px solid #3a3020;border-radius:999px;padding:9px 14px;font-size:14px;color:#f1d77a;min-width:46px}
+.cb.big{background:#d4af37;color:#1a1300;font-weight:700;min-width:64px}
+#vol{width:90px;accent-color:#d4af37}
+#perr{color:#f1d77a;font-size:13px;padding:6px 12px;background:#000;word-break:break-word;min-height:22px}
 .hide{display:none!important}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>محوّل الماك إلى Xtream</h1>
+  <h1><span class="logo">AlameeereSP</span></h1>
 
   <div class="box" id="login">
     <label>رابط البورتال</label>
-    <input id="portal" placeholder="http://example.com/c/" autocomplete="off">
+    <input type="text" id="portal" placeholder="http://example.com/c/" autocomplete="off">
     <label>الماك</label>
-    <input id="mac" placeholder="00:1A:79:00:00:00" autocomplete="off">
+    <input type="text" id="mac" placeholder="00:1A:79:00:00:00" autocomplete="off">
     <div class="chk"><input type="checkbox" id="fAr" checked><span>عربي فقط</span></div>
     <div class="chk"><input type="checkbox" id="fAd" checked><span>حجب المحتوى الإباحي</span></div>
     <button class="btn" id="go">اتصال</button>
     <div class="err" id="lerr"></div>
+    <div class="saved" id="savedBox"></div>
   </div>
 
   <div id="app" class="hide">
@@ -70,13 +92,22 @@ video{flex:1;width:100%;min-height:0;background:#000}
       <div class="stat"><small>التصنيفات</small><b id="sCat">-</b></div>
       <div class="stat"><small>القنوات</small><b id="sCh">-</b></div>
     </div>
+
+    <div class="box xt">
+      <h3>بيانات Xtream للتطبيقات</h3>
+      <div class="xr"><span>السيرفر</span><code id="xSrv"></code><button class="btn alt" data-copy="xSrv">نسخ</button></div>
+      <div class="xr"><span>اليوزر</span><code id="xUsr"></code><button class="btn alt" data-copy="xUsr">نسخ</button></div>
+      <div class="xr"><span>الباسورد</span><code id="xPwd"></code><button class="btn alt" data-copy="xPwd">نسخ</button></div>
+      <div class="xnote">الصق الثلاثة في تطبيق مثل Smarters (Xtream Codes). اشتراكك يسمح باتصال واحد فقط.</div>
+    </div>
+
     <div class="tabs">
       <button class="tab on" data-t="itv">قنوات</button>
       <button class="tab" data-t="vod">أفلام</button>
       <button class="tab" data-t="series">مسلسلات</button>
     </div>
     <div class="row2">
-      <input id="q" placeholder="بحث...">
+      <input type="text" id="q" placeholder="بحث...">
       <button class="btn alt" id="back">رجوع</button>
       <button class="btn alt" id="out">خروج</button>
     </div>
@@ -86,13 +117,30 @@ video{flex:1;width:100%;min-height:0;background:#000}
 </div>
 
 <div id="pl">
-  <div id="pbar"><button class="btn alt" id="pclose">إغلاق</button><div id="pt"></div></div>
-  <video id="v" controls playsinline></video>
+  <div id="pbar">
+    <button class="btn alt" id="pclose">إغلاق</button>
+    <div id="pt"></div>
+    <span class="logo">AlameeereSP</span>
+  </div>
+  <div id="vw"><video id="v" playsinline></video></div>
   <div id="perr"></div>
+  <div id="ctl">
+    <div id="sr"><span id="tm">0:00</span><input type="range" id="seek" min="0" max="1000" value="0"></div>
+    <div id="br">
+      <button class="cb" id="fs">ملء الشاشة</button>
+      <button class="cb" id="au">الصوت</button>
+      <button class="cb" id="mu">كتم</button>
+      <input type="range" id="vol" min="0" max="100" value="100">
+      <button class="cb" id="fw">+10</button>
+      <button class="cb big" id="pp">❚❚</button>
+      <button class="cb" id="bk">-10</button>
+    </div>
+  </div>
 </div>
 
 <script>
 const API = "https://sp.m737217130.workers.dev";
+const XPASS = "11223345";
 const $ = function (s) { return document.querySelector(s); };
 
 let cfg = null;
@@ -108,6 +156,7 @@ let retryTimer = null;
 let watchTimer = null;
 let lastT = -1;
 let lastChange = 0;
+let dragging = false;
 const v = $("#v");
 
 function el(tag, cls, text) {
@@ -179,8 +228,55 @@ async function call(params) {
   return j;
 }
 
+// ---------- saved macs ----------
+function getSaved() {
+  try {
+    const a = JSON.parse(localStorage.getItem("stk_saved") || "[]");
+    return Array.isArray(a) ? a : [];
+  } catch (e) { return []; }
+}
+function putSaved(a) {
+  localStorage.setItem("stk_saved", JSON.stringify(a));
+}
+function hostOf(p) {
+  try {
+    let s = String(p);
+    if (s.indexOf("http") !== 0) s = "http://" + s;
+    return new URL(s).host;
+  } catch (e) { return String(p); }
+}
+function saveEntry(portal, mac) {
+  const m = mac.toUpperCase();
+  const a = getSaved().filter(function (x) { return !(x.portal === portal && x.mac === m); });
+  a.unshift({ portal: portal, mac: m });
+  putSaved(a.slice(0, 30));
+}
+function renderSaved() {
+  const box = $("#savedBox");
+  box.innerHTML = "";
+  const a = getSaved();
+  if (!a.length) return;
+  box.appendChild(el("h3", "", "الماكات المحفوظة"));
+  a.forEach(function (x) {
+    const row = el("div", "sv");
+    const pick = el("button", "pick", hostOf(x.portal) + "  |  " + x.mac);
+    pick.onclick = function () {
+      $("#portal").value = x.portal;
+      $("#mac").value = x.mac;
+    };
+    const del = el("button", "del", "حذف");
+    del.onclick = function () {
+      putSaved(getSaved().filter(function (y) { return !(y.portal === x.portal && y.mac === x.mac); }));
+      renderSaved();
+    };
+    row.appendChild(pick);
+    row.appendChild(del);
+    box.appendChild(row);
+  });
+}
+
 // ---------- login ----------
-function loadSaved() {
+function loadLast() {
   try {
     const s = JSON.parse(localStorage.getItem("stk_cfg") || "null");
     if (s) {
@@ -190,7 +286,34 @@ function loadSaved() {
       $("#fAd").checked = s.ad !== false;
     }
   } catch (e) {}
+  renderSaved();
 }
+
+function showXtream() {
+  let p = cfg.portal.trim();
+  while (p.endsWith("/")) p = p.slice(0, p.length - 1);
+  $("#xSrv").textContent = API + "/p/" + b64(p);
+  $("#xUsr").textContent = cfg.mac.toUpperCase();
+  $("#xPwd").textContent = XPASS;
+}
+
+document.querySelectorAll("[data-copy]").forEach(function (b) {
+  b.onclick = function () {
+    const t = $("#" + b.dataset.copy).textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function () { b.textContent = "تم"; setTimeout(function () { b.textContent = "نسخ"; }, 1200); });
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = t;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      b.textContent = "تم";
+      setTimeout(function () { b.textContent = "نسخ"; }, 1200);
+    }
+  };
+});
 
 $("#go").onclick = async function () {
   $("#lerr").textContent = "";
@@ -202,9 +325,11 @@ $("#go").onclick = async function () {
   try {
     const info = await call({ action: "info" });
     localStorage.setItem("stk_cfg", JSON.stringify(cfg));
+    saveEntry(portal, mac);
     $("#sExp").textContent = info.expiry || "-";
     $("#sCat").textContent = String(info.itv_cats + info.vod_cats + info.series_cats);
     $("#sCh").textContent = String(info.channels);
+    showXtream();
     $("#login").classList.add("hide");
     $("#app").classList.remove("hide");
     loadCats();
@@ -216,6 +341,7 @@ $("#go").onclick = async function () {
 
 $("#out").onclick = function () {
   closePlayer();
+  renderSaved();
   $("#app").classList.add("hide");
   $("#login").classList.remove("hide");
 };
@@ -365,6 +491,16 @@ $("#back").onclick = function () {
 };
 
 // ---------- player ----------
+function fmt(t) {
+  if (!isFinite(t) || t < 0) return "0:00";
+  const s = Math.floor(t % 60);
+  const m = Math.floor(t / 60) % 60;
+  const h = Math.floor(t / 3600);
+  const ss = (s < 10 ? "0" : "") + s;
+  if (h > 0) return h + ":" + (m < 10 ? "0" : "") + m + ":" + ss;
+  return m + ":" + ss;
+}
+
 function killPlayer() {
   if (player) { try { player.destroy(); } catch (e) {} player = null; }
   v.pause();
@@ -381,6 +517,7 @@ function closePlayer() {
   stopTimers();
   cur = null;
   killPlayer();
+  if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen(); } catch (e) {} }
   $("#pl").classList.remove("on");
 }
 
@@ -397,7 +534,14 @@ function startStream() {
   const live = cur.kind === "live";
   player = mpegts.createPlayer(
     { type: "mpegts", isLive: live, url: u },
-    { enableWorker: false, liveBufferLatencyChasing: live }
+    {
+      enableWorker: true,
+      enableStashBuffer: true,
+      stashInitialSize: 2048,
+      liveBufferLatencyChasing: false,
+      lazyLoad: false,
+      autoCleanupSourceBuffer: true,
+    }
   );
   player.attachMediaElement(v);
   player.on(mpegts.Events.ERROR, function (t, d) {
@@ -435,7 +579,7 @@ function watchdog() {
     if (retries > 0 && $("#perr").textContent.indexOf("إعادة") === 0) $("#perr").textContent = "";
     return;
   }
-  if (Date.now() - lastChange > 8000) {
+  if (Date.now() - lastChange > 10000) {
     lastChange = Date.now();
     scheduleRetry();
   }
@@ -449,18 +593,99 @@ function play(url, title, kind) {
   lastChange = Date.now();
   $("#pt").textContent = title;
   $("#perr").textContent = "";
+  const isLive = kind === "live";
+  $("#seek").classList.toggle("hide", isLive);
+  $("#bk").classList.toggle("hide", isLive);
+  $("#fw").classList.toggle("hide", isLive);
   $("#pl").classList.add("on");
   startStream();
   if (cur.auto) watchTimer = setInterval(watchdog, 2000);
+  upd();
 }
+
+function upd() {
+  if (!cur) return;
+  const live = cur.kind === "live";
+  const d = v.duration;
+  const hasDur = !live && isFinite(d) && d > 0;
+  $("#seek").disabled = !hasDur;
+  if (hasDur) {
+    if (!dragging) $("#seek").value = String(Math.floor((v.currentTime / d) * 1000));
+    $("#tm").textContent = fmt(v.currentTime) + " / " + fmt(d);
+  } else {
+    $("#tm").textContent = live ? "مباشر" : fmt(v.currentTime);
+  }
+  $("#pp").textContent = v.paused ? "▶" : "❚❚";
+  $("#mu").textContent = v.muted ? "تشغيل الصوت" : "كتم";
+}
+
+v.addEventListener("timeupdate", upd);
+v.addEventListener("play", upd);
+v.addEventListener("pause", upd);
+v.addEventListener("durationchange", upd);
+v.addEventListener("volumechange", upd);
 
 v.onerror = function () {
   if (cur && cur.kind === "series") $("#perr").textContent = "تعذر تشغيل هذا الملف في المتصفح";
 };
 
+$("#pp").onclick = function () {
+  if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(function () {}); }
+  else v.pause();
+};
+
+function jump(sec) {
+  if (!cur || cur.kind === "live") return;
+  let t = v.currentTime + sec;
+  if (t < 0) t = 0;
+  if (isFinite(v.duration) && v.duration > 0 && t > v.duration) t = v.duration - 1;
+  try { v.currentTime = t; } catch (e) {}
+}
+$("#bk").onclick = function () { jump(-10); };
+$("#fw").onclick = function () { jump(10); };
+
+$("#seek").addEventListener("input", function () { dragging = true; });
+$("#seek").addEventListener("change", function () {
+  const d = v.duration;
+  if (isFinite(d) && d > 0) {
+    try { v.currentTime = (parseInt($("#seek").value, 10) / 1000) * d; } catch (e) {}
+  }
+  dragging = false;
+});
+
+$("#mu").onclick = function () { v.muted = !v.muted; };
+$("#vol").addEventListener("input", function () {
+  v.volume = parseInt($("#vol").value, 10) / 100;
+  if (v.volume > 0) v.muted = false;
+});
+
+$("#au").onclick = function () {
+  const at = v.audioTracks;
+  if (!at || at.length < 2) {
+    $("#perr").textContent = "لا توجد مسارات صوت أخرى في هذا البث";
+    return;
+  }
+  let idx = 0;
+  for (let i = 0; i < at.length; i++) if (at[i].enabled) idx = i;
+  const nx = (idx + 1) % at.length;
+  for (let j = 0; j < at.length; j++) at[j].enabled = j === nx;
+  $("#perr").textContent = "مسار الصوت: " + (at[nx].label || at[nx].language || String(nx + 1));
+};
+
+$("#fs").onclick = function () {
+  const p = $("#pl");
+  if (document.fullscreenElement) {
+    if (document.exitFullscreen) document.exitFullscreen();
+  } else if (p.requestFullscreen) {
+    p.requestFullscreen();
+  } else if (v.webkitEnterFullscreen) {
+    v.webkitEnterFullscreen();
+  }
+};
+
 $("#pclose").onclick = closePlayer;
 
-loadSaved();
+loadLast();
 </script>
 </body>
 </html>
