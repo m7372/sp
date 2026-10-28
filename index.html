@@ -42,6 +42,8 @@ h1{font-size:22px;text-align:center;margin:10px 0 16px}
 #cats{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px}
 .cat{flex:none;padding:8px 12px;border-radius:999px;background:#0d0d0d;border:1px solid #2e2616;font-size:13px;white-space:nowrap}
 .cat.on{background:#2a2208;border-color:#d4af37;color:#f1d77a}
+.cat.sp{border-color:#d4af37;color:#d4af37;font-weight:700}
+.cat.sp.on{background:#d4af37;color:#1a1300}
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
 .card{background:#0d0d0d;border:1px solid #2e2616;border-radius:10px;overflow:hidden;text-align:start;display:block;width:100%}
 .card:active{border-color:#d4af37}
@@ -145,7 +147,9 @@ const $ = function (s) { return document.querySelector(s); };
 
 let cfg = null;
 let type = "itv";
+let allCats = [];
 let cats = [];
+let sportMode = false;
 let items = [];
 let curCat = null;
 let player = null;
@@ -177,6 +181,7 @@ function ctxId() {
 const ADULT_SUBSTR = ["XXX", "PORN", "ADULT", "EROTIC", "EROTIK", "ERWACHSENE", "NSFW", "18+", "+18", "PLAYBOY", "HUSTLER", "BRAZZERS", "سكس", "اباحي", "إباحي", "للكبار", "جنس"];
 const ADULT_TOKENS = ["SEX", "SEXY", "ADULTS", "PORNO", "XXX"];
 const ARABIC_TOKENS = ["AR", "ARAB", "ARABIC", "ARABE", "ARABIA"];
+const SPORT_WORDS = ["SPORT", "SPORTS", "BEIN", "SSC", "ESPN", "DAZN", "FOOTBALL", "SOCCER", "NBA", "UFC", "رياض", "كورة", "كرة", "مباريات", "بي ان", "بين سبورت"];
 
 function tokensOf(s) {
   const out = [];
@@ -213,6 +218,14 @@ function isArabic(s) {
   if (hasArabic(s)) return true;
   const t = tokensOf(s);
   for (let j = 0; j < t.length; j++) if (ARABIC_TOKENS.indexOf(t[j]) > -1) return true;
+  return false;
+}
+function isSport(s) {
+  const raw = String(s || "");
+  const up = raw.toUpperCase();
+  for (let i = 0; i < SPORT_WORDS.length; i++) {
+    if (up.includes(SPORT_WORDS[i]) || raw.includes(SPORT_WORDS[i])) return true;
+  }
   return false;
 }
 
@@ -350,26 +363,36 @@ document.querySelectorAll(".tab").forEach(function (b) {
   b.onclick = function () {
     document.querySelectorAll(".tab").forEach(function (x) { x.classList.toggle("on", x === b); });
     type = b.dataset.t;
+    sportMode = false;
     $("#q").value = "";
     loadCats();
   };
 });
 
 // ---------- categories and items ----------
+function applyCatFilter() {
+  let list = allCats.slice();
+  if (cfg.ad) list = list.filter(function (c) { return !isAdult(c.name); });
+  if (sportMode) {
+    list = list.filter(function (c) { return isSport(c.name); });
+  } else if (cfg.ar) {
+    list = list.filter(function (c) { return isArabic(c.name); });
+  }
+  cats = list;
+}
+
 async function loadCats() {
   backFn = null;
   $("#cats").innerHTML = "";
   $("#grid").innerHTML = "";
   $("#grid").appendChild(el("div", "msg", "جاري التحميل..."));
   try {
-    let list = await call({ action: "cats", type: type });
-    if (cfg.ad) list = list.filter(function (c) { return !isAdult(c.name); });
-    if (cfg.ar) list = list.filter(function (c) { return isArabic(c.name); });
-    cats = list;
+    allCats = await call({ action: "cats", type: type });
+    applyCatFilter();
     renderCats();
     if (!cats.length) {
       $("#grid").innerHTML = "";
-      $("#grid").appendChild(el("div", "msg", "لا توجد أقسام (جرّب إيقاف فلتر العربي)"));
+      $("#grid").appendChild(el("div", "msg", sportMode ? "لا توجد أقسام رياضة في هذا البورتال" : "لا توجد أقسام (جرّب إيقاف فلتر العربي)"));
       return;
     }
     loadItems(cats[0].id);
@@ -382,6 +405,20 @@ async function loadCats() {
 function renderCats() {
   const box = $("#cats");
   box.innerHTML = "";
+  const sb = el("button", "cat sp" + (sportMode ? " on" : ""), "رياضة");
+  sb.onclick = function () {
+    sportMode = !sportMode;
+    $("#q").value = "";
+    applyCatFilter();
+    renderCats();
+    if (!cats.length) {
+      $("#grid").innerHTML = "";
+      $("#grid").appendChild(el("div", "msg", sportMode ? "لا توجد أقسام رياضة في هذا البورتال" : "لا توجد أقسام (جرّب إيقاف فلتر العربي)"));
+      return;
+    }
+    loadItems(cats[0].id);
+  };
+  box.appendChild(sb);
   cats.forEach(function (c) {
     const b = el("button", "cat" + (c.id === curCat ? " on" : ""), c.name);
     b.onclick = function () { $("#q").value = ""; loadItems(c.id); };
